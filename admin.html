@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>AviSight Admin</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="header-logo">
+  <img src="school_logo.jpeg" alt="School Logo">
+  <h1>AviSight Admin Dashboard</h1>
+</div>
+
+<div id="loginSection" class="container">
+  <h3>Admin Login</h3>
+  <input id="username" placeholder="Username">
+  <input id="password" placeholder="Password" type="password">
+  <button id="loginBtn">Login</button>
+  <p id="loginMsg"></p>
+
+  <button onclick="window.location.href='index.html'" style="background-color: #6c757d; margin-top: 10px;">
+    &larr; Back to Student Search
+  </button>
+</div>
+
+<div id="adminSection" class="container" style="display:none;">
+  <h3>Add / Edit Student</h3>
+  <form id="addStudentForm">
+    <input id="name" placeholder="Name" required>
+    <input id="simHours" type="number" placeholder="Simulator Hours" required>
+    <input id="absences" type="number" placeholder="Absences" required>
+    <input id="targetLeft" type="number" placeholder="Target Hours Left" required>
+    <button type="submit">Save</button>
+  </form>
+  
+  <button id="refreshBtn" style="background-color: #555;">Refresh List</button>
+  
+  <h3>All Students</h3>
+  
+  <div class="table-wrapper">
+    <table id="studentsTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Sim Hours</th>
+          <th>Absences</th>
+          <th>Target Left</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <button onclick="window.location.href='index.html'" style="background-color: #6c757d; margin-top: 20px;">
+    &larr; Back to Student Search
+  </button>
+</div>
+
+<footer>AviSight</footer>
+<script src="admin.js"></script>
+</body>
+</html>
