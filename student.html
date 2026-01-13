@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AviSight Student</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="header-logo">
+  <img src="school_logo.jpeg">
+  <h1>AviSight Student Portal</h1>
+</div>
+
+<!-- STUDENT LOGIN -->
+<div id="studentLogin" class="container">
+  <h3>Student Login</h3>
+
+  <input id="studentUsername" placeholder="Username">
+  <input id="studentPassword" type="password" placeholder="Password">
+
+  <button id="studentLoginBtn">Login</button>
+
+  <a href="index.html">
+    <button type="button">Back</button>
+  </a>
+
+  <p id="studentLoginMsg"></p>
+</div>
+
+<!-- STUDENT SEARCH -->
+<div id="studentSection" class="container" style="display:none;">
+  <input type="text" id="searchName" placeholder="Enter student name">
+  <button id="searchBtn">Search</button>
+  <div id="result"></div>
+</div>
+
+<footer>AviSight</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

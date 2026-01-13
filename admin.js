@@ -1,29 +1,18 @@
 const API_URL = "https://avisight-backend.onrender.com";
 
-/* ==========================
-   AUTO CALCULATE TARGET HOURS
-========================== */
-function calculateTarget() {
-  const sim = +document.getElementById("simHours").value || 0;
-  const abs = +document.getElementById("absences").value || 0;
-  document.getElementById("targetLeft").value = sim - abs;
-}
-
-document.getElementById("simHours").addEventListener("input", calculateTarget);
-document.getElementById("absences").addEventListener("input", calculateTarget);
-
-/* ==========================
-   LOGIN
-========================== */
 document.getElementById("loginBtn").addEventListener("click", async () => {
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const u = document.getElementById("username").value.trim();
+  const p = document.getElementById("password").value.trim();
   const msg = document.getElementById("loginMsg");
 
   const res = await fetch(`${API_URL}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
+    body: JSON.stringify({
+      username: u,
+      password: p,
+      role: "admin"
+    })
   });
 
   if (res.ok) {
@@ -36,51 +25,40 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   }
 });
 
-/* ==========================
-   SAVE STUDENT
-========================== */
 document.getElementById("addStudentForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const sim = +document.getElementById("simHours").value;
-  const abs = +document.getElementById("absences").value;
+  const simHours = +document.getElementById("simHours").value;
+  const absences = +document.getElementById("absences").value;
 
   const student = {
     name: document.getElementById("name").value.trim(),
-    simulator_hours: sim,
-    absences: abs,
-    target_hours_left: sim - abs
+    simulator_hours: simHours,
+    absences: absences,
+    target_hours_left: simHours - absences
   };
 
   await fetch(`${API_URL}/students`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(student)
+    body: JSON.stringify(student),
   });
 
   alert("Student saved!");
   loadAllStudents();
   e.target.reset();
-  document.getElementById("targetLeft").value = "";
 });
 
-/* ==========================
-   DELETE STUDENT
-========================== */
 async function deleteStudent(name) {
   if (!confirm(`Delete ${name}?`)) return;
   await fetch(`${API_URL}/students/${name}`, { method: "DELETE" });
   loadAllStudents();
 }
 
-/* ==========================
-   LOAD STUDENTS
-========================== */
 async function loadAllStudents() {
   const res = await fetch(`${API_URL}/students`);
   const data = await res.json();
   const tbody = document.querySelector("#studentsTable tbody");
-
   tbody.innerHTML = "";
 
   data.forEach((s) => {
@@ -98,5 +76,6 @@ async function loadAllStudents() {
   });
 }
 
-document.getElementById("refreshBtn")
+document
+  .getElementById("refreshBtn")
   .addEventListener("click", loadAllStudents);

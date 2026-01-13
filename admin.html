@@ -8,30 +8,40 @@
 <body>
 
 <div class="header-logo">
-  <img src="school_logo.jpeg" alt="School Logo">
+  <img src="school_logo.jpeg">
   <h1>AviSight Admin Dashboard</h1>
 </div>
 
+<!-- LOGIN SECTION -->
 <div id="loginSection" class="container">
   <h3>Admin Login</h3>
-  <input type="text" id="username" placeholder="Username">
-  <input type="password" id="password" placeholder="Password">
+
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password">
+
   <button id="loginBtn">Login</button>
+
+  <!-- 🔙 BACK BUTTON -->
+  <a href="index.html">
+    <button type="button">Back</button>
+  </a>
+
   <p id="loginMsg"></p>
 </div>
 
+<!-- ADMIN DASHBOARD -->
 <div id="adminSection" class="container" style="display:none;">
   <h3>Add / Edit Student</h3>
 
   <form id="addStudentForm">
-    <input type="text" id="name" placeholder="Name" required>
-    <input type="number" id="simHours" placeholder="Simulator Hours" required>
-    <input type="number" id="absences" placeholder="Absences" required>
+    <input id="name" placeholder="Name" required>
 
-    <!-- AUTO-CALCULATED -->
-    <input type="number" id="targetLeft"
-           placeholder="Target Hours Left"
-           readonly>
+    <input id="simHours" type="number" placeholder="Simulator Hours" required>
+
+    <input id="absences" type="number" placeholder="Absences" required>
+
+    <!-- Uneditable computed field -->
+    <input id="targetLeft" placeholder="Target Hours Left" disabled>
 
     <button type="submit">Save</button>
   </form>

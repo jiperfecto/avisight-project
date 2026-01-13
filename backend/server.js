@@ -18,52 +18,52 @@ function saveStudents(students) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(students, null, 2));
 }
 
-/* ==========================
-   LOGIN
-========================== */
+/* 🔐 LOGIN (ADMIN + STUDENT) */
 app.post("/login", (req, res) => {
-  const { username, password } = req.body;
-  if (username === "admin1" && password === "1234567809") {
-    res.json({ message: "Login successful" });
-  } else {
-    res.status(401).json({ message: "Invalid credentials" });
+  const { username, password, role } = req.body;
+
+  // ADMIN
+  if (
+    role === "admin" &&
+    username === "admin1" &&
+    password === "1234567809"
+  ) {
+    return res.json({ message: "Admin login successful" });
   }
+
+  // STUDENT
+  if (
+    role === "student" &&
+    username === "avisight_student1" &&
+    password === "1234567809"
+  ) {
+    return res.json({ message: "Student login successful" });
+  }
+
+  return res.status(401).json({ message: "Invalid credentials" });
 });
 
-/* ==========================
-   STUDENTS
-========================== */
+/* STUDENTS API */
 app.get("/students", (req, res) => {
   res.json(loadStudents());
 });
 
 app.get("/students/:name", (req, res) => {
   const students = loadStudents();
-  const student = students.find(
-    s => s.name.toLowerCase() === req.params.name.toLowerCase()
+  const s = students.find(
+    stu => stu.name.toLowerCase() === req.params.name.toLowerCase()
   );
-  if (!student) return res.status(404).json({ message: "Not found" });
-  res.json(student);
+  if (!s) return res.status(404).json({ message: "Student not found" });
+  res.json(s);
 });
 
 app.post("/students", (req, res) => {
-  const { name, simulator_hours, absences } = req.body;
-
-  const studentData = {
-    name,
-    simulator_hours,
-    absences,
-    target_hours_left: simulator_hours - absences
-  };
-
   const students = loadStudents();
-  const index = students.findIndex(
-    s => s.name.toLowerCase() === name.toLowerCase()
+  const idx = students.findIndex(
+    stu => stu.name.toLowerCase() === req.body.name.toLowerCase()
   );
-
-  if (index >= 0) students[index] = studentData;
-  else students.push(studentData);
-
+  if (idx >= 0) students[idx] = req.body;
+  else students.push(req.body);
   saveStudents(students);
   res.json({ message: "Student saved successfully" });
 });
@@ -71,12 +71,12 @@ app.post("/students", (req, res) => {
 app.delete("/students/:name", (req, res) => {
   let students = loadStudents();
   students = students.filter(
-    s => s.name.toLowerCase() !== req.params.name.toLowerCase()
+    stu => stu.name.toLowerCase() !== req.params.name.toLowerCase()
   );
   saveStudents(students);
-  res.json({ message: "Student deleted" });
+  res.json({ message: "Student deleted successfully" });
 });
 
 app.listen(PORT, () =>
-  console.log(`Server running on port ${PORT}`)
+  console.log(`✅ Server running on port ${PORT}`)
 );
