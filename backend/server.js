@@ -18,32 +18,35 @@ function saveStudents(students) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(students, null, 2));
 }
 
-/* 🔐 LOGIN (ADMIN + STUDENT) */
+/* =======================
+   ADMIN LOGIN
+======================= */
 app.post("/login", (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, password } = req.body;
 
-  // ADMIN
-  if (
-    role === "admin" &&
-    username === "admin1" &&
-    password === "1234567809"
-  ) {
-    return res.json({ message: "Admin login successful" });
+  if (username === "admin1" && password === "1234567809") {
+    res.json({ message: "Admin login successful" });
+  } else {
+    res.status(401).json({ message: "Invalid admin credentials" });
   }
-
-  // STUDENT
-  if (
-    role === "student" &&
-    username === "avisight_student1" &&
-    password === "1234567809"
-  ) {
-    return res.json({ message: "Student login successful" });
-  }
-
-  return res.status(401).json({ message: "Invalid credentials" });
 });
 
-/* STUDENTS API */
+/* =======================
+   STUDENT LOGIN  ✅ FIX
+======================= */
+app.post("/student-login", (req, res) => {
+  const { username, password } = req.body;
+
+  if (username === "avisight_student1" && password === "1234567809") {
+    res.json({ message: "Student login successful" });
+  } else {
+    res.status(401).json({ message: "Invalid student credentials" });
+  }
+});
+
+/* =======================
+   STUDENT DATA ROUTES
+======================= */
 app.get("/students", (req, res) => {
   res.json(loadStudents());
 });
@@ -62,8 +65,10 @@ app.post("/students", (req, res) => {
   const idx = students.findIndex(
     stu => stu.name.toLowerCase() === req.body.name.toLowerCase()
   );
+
   if (idx >= 0) students[idx] = req.body;
   else students.push(req.body);
+
   saveStudents(students);
   res.json({ message: "Student saved successfully" });
 });
@@ -78,5 +83,5 @@ app.delete("/students/:name", (req, res) => {
 });
 
 app.listen(PORT, () =>
-  console.log(`✅ Server running on port ${PORT}`)
+  console.log(`✅ AviSight backend running on port ${PORT}`)
 );
