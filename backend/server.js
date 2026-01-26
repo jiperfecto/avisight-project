@@ -1,85 +1,114 @@
 import express from "express";
-import fs from "fs";
+import mongoose from "mongoose";
 import cors from "cors";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = "./students.json";
 
 app.use(cors());
 app.use(express.json());
 
-function loadStudents() {
-  if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "[]");
-  return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-}
+/* =======================
+   MONGODB CONNECTION
+======================= */
+// Ensure you set MONGODB_URI in Render Dashboard
+const MONGODB_URI = process.env.MONGODB_URI;
 
-function saveStudents(students) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(students, null, 2));
-}
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log("✅ Connected to MongoDB Atlas"))
+  .catch(err => console.error("❌ MongoDB Connection Error:", err));
+
+// Define Schema Inline for Simplicity
+const StudentSchema = new mongoose.Schema({
+  name: String,
+  simulator_hours: Number,
+  absences: Number,
+  target_hours_left: Number,
+});
+const Student = mongoose.model("Student", StudentSchema);
 
 /* =======================
-   ADMIN LOGIN
+   ROOT ROUTE (For Render)
 ======================= */
-app.post("/login", (req, res) => {
-  const { username, password } = req.body;
-
-  if (username === "admin1" && password === "1234567809") {
-    res.json({ message: "Admin login successful" });
-  } else {
-    res.status(401).json({ message: "Invalid admin credentials" });
-  }
+app.get("/", (req, res) => {
+  res.send("AviSight Backend is running");
 });
 
 /* =======================
-   STUDENT LOGIN  ✅ FIX
+   ADMIN LOGIN
+   Creds: admin1 / 1234567809
+======================= */
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  if (username === "admin1" && password === "1234567809") {
+    return res.json({ message: "Admin login successful" });
+  }
+  res.status(401).json({ message: "Invalid admin credentials" });
+});
+
+/* =======================
+   STUDENT LOGIN
+   Creds: avisight_student1 / 1234567809
 ======================= */
 app.post("/student-login", (req, res) => {
   const { username, password } = req.body;
-
   if (username === "avisight_student1" && password === "1234567809") {
-    res.json({ message: "Student login successful" });
-  } else {
-    res.status(401).json({ message: "Invalid student credentials" });
+    return res.json({ message: "Student login successful" });
   }
+  res.status(401).json({ message: "Invalid student credentials" });
 });
 
 /* =======================
    STUDENT DATA ROUTES
 ======================= */
-app.get("/students", (req, res) => {
-  res.json(loadStudents());
+app.get("/students", async (req, res) => {
+  try {
+    const students = await Student.find();
+    res.json(students);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching students" });
+  }
 });
 
-app.get("/students/:name", (req, res) => {
-  const students = loadStudents();
-  const s = students.find(
-    stu => stu.name.toLowerCase() === req.params.name.toLowerCase()
-  );
-  if (!s) return res.status(404).json({ message: "Student not found" });
-  res.json(s);
+// Search by name (Case Insensitive)
+app.get("/students/:name", async (req, res) => {
+  try {
+    const student = await Student.findOne({
+      name: new RegExp(`^${req.params.name}$`, "i"),
+    });
+    if (!student) return res.status(404).json({ message: "Student not found" });
+    res.json(student);
+  } catch (error) {
+    res.status(500).json({ message: "Error searching student" });
+  }
 });
 
-app.post("/students", (req, res) => {
-  const students = loadStudents();
-  const idx = students.findIndex(
-    stu => stu.name.toLowerCase() === req.body.name.toLowerCase()
-  );
+// Add or Update Student
+app.post("/students", async (req, res) => {
+  const { name, simulator_hours, absences } = req.body;
+  const target_hours_left = simulator_hours - absences;
 
-  if (idx >= 0) students[idx] = req.body;
-  else students.push(req.body);
-
-  saveStudents(students);
-  res.json({ message: "Student saved successfully" });
+  try {
+    // upsert: true means "Create if doesn't exist, Update if it does"
+    const updated = await Student.findOneAndUpdate(
+      { name }, 
+      { name, simulator_hours, absences, target_hours_left },
+      { upsert: true, new: true }
+    );
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: "Error saving student" });
+  }
 });
 
-app.delete("/students/:name", (req, res) => {
-  let students = loadStudents();
-  students = students.filter(
-    stu => stu.name.toLowerCase() !== req.params.name.toLowerCase()
-  );
-  saveStudents(students);
-  res.json({ message: "Student deleted successfully" });
+// Delete Student
+app.delete("/students/:name", async (req, res) => {
+  try {
+    await Student.findOneAndDelete({ name: req.params.name });
+    res.json({ message: "Student deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting student" });
+  }
 });
 
 app.listen(PORT, () =>
