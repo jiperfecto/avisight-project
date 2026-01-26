@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>View Information - AviSight</title>
+  <link rel="stylesheet" href="style.css"> </head>
+<body>
+<div class="header-logo">
+  <img src="school_logo.jpeg">
+  <h1>View Information</h1>
+</div>
+
+<div class="container">
+  <h3>Instructor Performance</h3>
+  <label>Select Instructor to View:</label>
+  <select id="viewInstSelector" style="width:100%; padding:10px;">
+    <option disabled selected>-- Loading --</option>
+  </select>
+
+  <div id="statsResult" style="margin-top:20px; padding:15px; border:1px solid #ccc; display:none;">
+    <h2 id="resName" style="margin:0;"></h2>
+    <p>Total No-Show Hours: <b id="resHours" style="font-size:1.5rem; color: #d9534f;"></b></p>
+    <small>Calculated from <span id="resCount"></span> students assigned.</small>
+  </div>
+
+  <br><br>
+  <a href="admin.html"><button style="background-color:#555;">⬅ Back to Menu</button></a>
+</div>
+
+<footer>AviSight</footer>
+
+<script>
+  const API_URL = "https://avisight-backend.onrender.com";
+  const selector = document.getElementById("viewInstSelector");
+  const resultDiv = document.getElementById("statsResult");
+
+  // Load Instructors immediately
+  async function init() {
+    selector.innerHTML = "<option disabled selected>-- Select Instructor --</option>";
+    try {
+      const res = await fetch(`${API_URL}/instructors`);
+      const data = await res.json();
+      data.forEach(inst => {
+        selector.innerHTML += `<option value="${inst.name}">${inst.name}</option>`;
+      });
+    } catch(e) {
+      selector.innerHTML = "<option>Error loading list</option>";
+    }
+  }
+
+  // When instructor is selected, fetch stats
+  selector.addEventListener("change", async () => {
+    const name = selector.value;
+    const res = await fetch(`${API_URL}/instructors/${name}/stats`);
+    const data = await res.json();
+
+    document.getElementById("resName").textContent = data.instructor;
+    document.getElementById("resHours").textContent = data.total_no_shows;
+    document.getElementById("resCount").textContent = data.student_count;
+    resultDiv.style.display = "block";
+  });
+
+  init();
+</script>
+</body>
+</html>

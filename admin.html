@@ -2,69 +2,68 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>AviSight Admin</title>
-  <link rel="stylesheet" href="style.css">
-</head>
+  <title>AviSight Admin Hub</title>
+  <link rel="stylesheet" href="style.css"> </head>
 <body>
-
 <div class="header-logo">
   <img src="school_logo.jpeg">
-  <h1>AviSight Admin Dashboard</h1>
+  <h1>AviSight Admin Hub</h1>
 </div>
 
-<!-- LOGIN SECTION -->
 <div id="loginSection" class="container">
   <h3>Admin Login</h3>
-
   <input id="username" placeholder="Username">
   <input id="password" type="password" placeholder="Password">
-
   <button id="loginBtn">Login</button>
-
-  <!-- 🔙 BACK BUTTON -->
-  <a href="index.html">
-    <button type="button">Back</button>
-  </a>
-
+  <a href="index.html" class="link-btn">⬅ Back</a>
   <p id="loginMsg"></p>
 </div>
 
-<!-- ADMIN DASHBOARD -->
-<div id="adminSection" class="container" style="display:none;">
-  <h3>Add / Edit Student</h3>
-
-  <form id="addStudentForm">
-    <input id="name" placeholder="Name" required>
-
-    <input id="simHours" type="number" placeholder="Simulator Hours" required>
-
-    <input id="absences" type="number" placeholder="Absences" required>
-
-    <!-- Uneditable computed field -->
-    <input id="targetLeft" placeholder="Target Hours Left" disabled>
-
-    <button type="submit">Save</button>
-  </form>
-
-  <button id="refreshBtn">Refresh</button>
-
-  <h3>All Students</h3>
-  <table id="studentsTable">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Sim Hours</th>
-        <th>Absences</th>
-        <th>Target Left</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<div id="adminMenu" class="container" style="display:none; text-align:center;">
+  <h3>Welcome, Admin</h3>
+  <p>Please select an action:</p>
+  
+  <button onclick="location.href='add_info.html'">Add Information</button>
+  <button onclick="location.href='view_info.html'">View Information</button>
+  
+  <br><br>
+  <button onclick="logout()" style="background-color:#444;">Logout</button>
 </div>
 
 <footer>AviSight</footer>
 
-<script src="admin.js"></script>
+<script>
+  const API_URL = "https://avisight-backend.onrender.com";
+
+  // Check Session
+  if(sessionStorage.getItem("admin_auth")) {
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("adminMenu").style.display = "block";
+  }
+
+  document.getElementById("loginBtn").addEventListener("click", async () => {
+    const u = document.getElementById("username").value.trim();
+    const p = document.getElementById("password").value.trim();
+    
+    const res = await fetch(`${API_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: u, password: p })
+    });
+
+    if (res.ok) {
+      sessionStorage.setItem("admin_auth", "true");
+      document.getElementById("loginSection").style.display = "none";
+      document.getElementById("adminMenu").style.display = "block";
+    } else {
+      document.getElementById("loginMsg").textContent = "Invalid Credentials";
+    }
+  });
+
+  function logout() {
+    sessionStorage.removeItem("admin_auth");
+    location.reload();
+  }
+</script>
 </body>
 </html>

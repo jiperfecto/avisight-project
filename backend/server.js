@@ -1,6 +1,8 @@
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
+import Student from "./models/Student.js";
+import Instructor from "./models/Instructor.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,109 +10,100 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-/* =======================
-   MONGODB CONNECTION
-======================= */
-// Ensure you set MONGODB_URI in Render Dashboard
 const MONGODB_URI = process.env.MONGODB_URI;
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log("✅ Connected to MongoDB Atlas"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
-// Define Schema Inline for Simplicity
-const StudentSchema = new mongoose.Schema({
-  name: String,
-  simulator_hours: Number,
-  absences: Number,
-  target_hours_left: Number,
-});
-const Student = mongoose.model("Student", StudentSchema);
+app.get("/", (req, res) => res.send("AviSight Backend is running"));
 
-/* =======================
-   ROOT ROUTE (For Render)
-======================= */
-app.get("/", (req, res) => {
-  res.send("AviSight Backend is running");
-});
-
-/* =======================
-   ADMIN LOGIN
-   Creds: admin1 / 1234567809
-======================= */
+/* ===== AUTH ROUTES ===== */
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  if (username === "admin1" && password === "1234567809") {
+  if (username === "admin" && password === "admin123") {
     return res.json({ message: "Admin login successful" });
   }
-  res.status(401).json({ message: "Invalid admin credentials" });
+  res.status(401).json({ message: "Invalid credentials" });
 });
 
-/* =======================
-   STUDENT LOGIN
-   Creds: avisight_student1 / 1234567809
-======================= */
 app.post("/student-login", (req, res) => {
   const { username, password } = req.body;
   if (username === "avisight_student1" && password === "1234567809") {
     return res.json({ message: "Student login successful" });
   }
-  res.status(401).json({ message: "Invalid student credentials" });
+  res.status(401).json({ message: "Invalid credentials" });
 });
 
-/* =======================
-   STUDENT DATA ROUTES
-======================= */
-app.get("/students", async (req, res) => {
+/* ===== INSTRUCTOR ROUTES ===== */
+// 1. Add Instructor
+app.post("/instructors", async (req, res) => {
   try {
-    const students = await Student.find();
-    res.json(students);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching students" });
-  }
-});
-
-// Search by name (Case Insensitive)
-app.get("/students/:name", async (req, res) => {
-  try {
-    const student = await Student.findOne({
-      name: new RegExp(`^${req.params.name}$`, "i"),
-    });
-    if (!student) return res.status(404).json({ message: "Student not found" });
-    res.json(student);
-  } catch (error) {
-    res.status(500).json({ message: "Error searching student" });
-  }
-});
-
-// Add or Update Student
-app.post("/students", async (req, res) => {
-  const { name, simulator_hours, absences } = req.body;
-  const target_hours_left = simulator_hours - absences;
-
-  try {
-    // upsert: true means "Create if doesn't exist, Update if it does"
-    const updated = await Student.findOneAndUpdate(
+    const { name, subject_code } = req.body;
+    // Update if exists, Create if new
+    const newInstructor = await Instructor.findOneAndUpdate(
       { name }, 
-      { name, simulator_hours, absences, target_hours_left },
+      { name, subject_code },
       { upsert: true, new: true }
     );
-    res.json(updated);
-  } catch (error) {
-    res.status(500).json({ message: "Error saving student" });
+    res.json(newInstructor);
+  } catch (err) {
+    res.status(500).json({ message: "Error saving instructor" });
   }
 });
 
-// Delete Student
-app.delete("/students/:name", async (req, res) => {
+// 2. Get All Instructors (For Dropdowns)
+app.get("/instructors", async (req, res) => {
+  const instructors = await Instructor.find();
+  res.json(instructors);
+});
+
+// 3. Get Instructor Stats (Total No-Shows)
+app.get("/instructors/:name/stats", async (req, res) => {
   try {
-    await Student.findOneAndDelete({ name: req.params.name });
-    res.json({ message: "Student deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Error deleting student" });
+    const students = await Student.find({ instructor_name: req.params.name });
+    // Sum all student absences
+    const total_no_shows = students.reduce((sum, stu) => sum + (stu.absences || 0), 0);
+    
+    res.json({ 
+      instructor: req.params.name, 
+      total_no_shows, 
+      student_count: students.length 
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching stats" });
   }
 });
 
-app.listen(PORT, () =>
-  console.log(`✅ AviSight backend running on port ${PORT}`)
-);
+/* ===== STUDENT ROUTES ===== */
+app.get("/students", async (req, res) => {
+  const students = await Student.find();
+  res.json(students);
+});
+
+app.get("/students/:name", async (req, res) => {
+  const student = await Student.findOne({
+    name: new RegExp(`^${req.params.name}$`, "i"),
+  });
+  if (!student) return res.status(404).json({ message: "Not found" });
+  res.json(student);
+});
+
+app.post("/students", async (req, res) => {
+  const { name, simulator_hours, absences, instructor_name } = req.body;
+  const target_hours_left = simulator_hours - absences;
+
+  const updated = await Student.findOneAndUpdate(
+    { name },
+    { name, simulator_hours, absences, target_hours_left, instructor_name },
+    { upsert: true, new: true }
+  );
+  res.json(updated);
+});
+
+app.delete("/students/:name", async (req, res) => {
+  await Student.findOneAndDelete({ name: req.params.name });
+  res.json({ message: "Deleted" });
+});
+
+app.listen(PORT, () => console.log(`✅ AviSight running on port ${PORT}`));
