@@ -6,37 +6,74 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <div class="header-logo">
   <img src="school_logo.jpeg">
   <h1>AviSight Student Portal</h1>
 </div>
 
-<!-- STUDENT LOGIN -->
 <div id="studentLogin" class="container">
   <h3>Student Login</h3>
-
   <input id="studentUsername" placeholder="Username">
   <input id="studentPassword" type="password" placeholder="Password">
-
   <button id="studentLoginBtn">Login</button>
-
-  <a href="index.html">
-    <button type="button">Back</button>
-  </a>
-
+  <a href="index.html"><button style="background-color:#555;">⬅ Back</button></a>
   <p id="studentLoginMsg"></p>
 </div>
 
-<!-- STUDENT SEARCH -->
 <div id="studentSection" class="container" style="display:none;">
-  <input type="text" id="searchName" placeholder="Enter student name">
+  <h3>Check Your Hours</h3>
+  <input id="searchGiven" placeholder="Enter Given Name">
+  <input id="searchSur" placeholder="Enter Surname">
   <button id="searchBtn">Search</button>
-  <div id="result"></div>
+  <div id="result" style="margin-top:15px; border-top:1px solid #ccc; padding-top:10px;"></div>
 </div>
 
 <footer>AviSight</footer>
 
-<script src="app.js"></script>
+<script>
+const API_URL = "https://avisight-backend.onrender.com";
+
+document.getElementById("studentLoginBtn").addEventListener("click", async () => {
+  const u = document.getElementById("studentUsername").value.trim();
+  const p = document.getElementById("studentPassword").value.trim();
+  
+  // Hardcoded student auth for now
+  if(u === "avisight_student1" && p === "1234567809") {
+     document.getElementById("studentLogin").style.display = "none";
+     document.getElementById("studentSection").style.display = "block";
+  } else {
+     document.getElementById("studentLoginMsg").textContent = "Invalid Credentials";
+  }
+});
+
+document.getElementById("searchBtn").addEventListener("click", async () => {
+  const given = document.getElementById("searchGiven").value.trim();
+  const sur = document.getElementById("searchSur").value.trim();
+
+  if(!given || !sur) return alert("Please enter both names.");
+
+  const res = await fetch(`${API_URL}/students/search`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ given_name: given, surname: sur })
+  });
+
+  const div = document.getElementById("result");
+  if (!res.ok) {
+    div.innerHTML = "<b style='color:red'>Student not found. Check spelling.</b>";
+  } else {
+    const s = await res.json();
+    const instName = s.instructor_id ? `${s.instructor_id.surname}` : "None";
+    
+    div.innerHTML = `
+      <p><b>Name:</b> ${s.surname}, ${s.given_name}</p>
+      <p><b>Instructor:</b> ${instName}</p>
+      <p><b>Simulator Hours:</b> ${s.simulator_hours}</p>
+      <p><b>Absences:</b> ${s.absences}</p>
+      <p><b>Target Hours Left:</b> ${s.target_hours_left}</p>
+    `;
+  }
+});
+</script>
 </body>
 </html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Update Info</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header-logo">
+  <img src="school_logo.jpeg">
+  <h1>Update Information</h1>
+</div>
+
+<div class="container">
+  <label><b>I want to update a:</b></label>
+  <select id="updateTypeSelector" style="width:100%; padding:10px;">
+    <option value="" disabled selected>-- Choose --</option>
+    <option value="instructor">Instructor</option>
+    <option value="student">Student</option>
+  </select>
+
+  <div id="searchBox" style="margin-top:20px; display:none;">
+    <label>Select Person:</label>
+    <select id="personSelector" style="width:100%; padding:10px;"></select>
+    <button id="loadBtn" style="margin-top:10px;">Load Details</button>
+  </div>
+
+  <div id="editArea" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:10px;">
+    
+    <label>Given Name (Locked):</label>
+    <input id="editGiven" disabled style="background:#ddd;">
+    <label>Surname (Locked):</label>
+    <input id="editSur" disabled style="background:#ddd;">
+
+    <div id="instFields" style="display:none;">
+      <label>Subject Code:</label>
+      <input id="editSubject">
+    </div>
+
+    <div id="stuFields" style="display:none;">
+      <label>Sim Hours:</label>
+      <input id="editSim" type="number">
+      <label>Absences:</label>
+      <input id="editAbs" type="number">
+      <label>Instructor:</label>
+      <select id="editInstSelect" style="width:100%; padding:10px; margin-bottom:10px;"></select>
+    </div>
+
+    <button id="updateBtn" style="background-color:#28a745;">Update Information</button>
+    <button id="deleteBtn" style="background-color:#dc3545;">Delete Record</button>
+  </div>
+
+  <br>
+  <a href="admin.html"><button style="background-color:#555;">⬅ Back</button></a>
+</div>
+
+<footer>AviSight</footer>
+
+<script>
+  const API_URL = "https://avisight-backend.onrender.com";
+  let currentId = null;
+  let currentType = null;
+
+  const typeSel = document.getElementById("updateTypeSelector");
+  const personSel = document.getElementById("personSelector");
+
+  // 1. SELECT TYPE
+  typeSel.addEventListener("change", async () => {
+    currentType = typeSel.value;
+    document.getElementById("searchBox").style.display = "block";
+    document.getElementById("editArea").style.display = "none";
+    
+    // Load list
+    const endpoint = currentType === "instructor" ? "/instructors" : "/students";
+    const res = await fetch(API_URL + endpoint);
+    const data = await res.json();
+    
+    personSel.innerHTML = "<option disabled selected>-- Select Name --</option>";
+    data.forEach(d => {
+      personSel.innerHTML += `<option value="${d._id}">${d.surname}, ${d.given_name}</option>`;
+    });
+  });
+
+  // 2. LOAD DETAILS
+  document.getElementById("loadBtn").addEventListener("click", async () => {
+    const id = personSel.value;
+    if(!id || id.includes("--")) return;
+    currentId = id;
+    
+    // Let's just quick fetch list again and find.
+    const endpoint = currentType === "instructor" ? "/instructors" : "/students";
+    const res = await fetch(API_URL + endpoint);
+    const all = await res.json();
+    const target = all.find(x => x._id === currentId);
+
+    document.getElementById("editArea").style.display = "block";
+    document.getElementById("editGiven").value = target.given_name;
+    document.getElementById("editSur").value = target.surname;
+
+    if(currentType === "instructor") {
+      document.getElementById("instFields").style.display = "block";
+      document.getElementById("stuFields").style.display = "none";
+      document.getElementById("editSubject").value = target.subject_code;
+    } else {
+      document.getElementById("instFields").style.display = "none";
+      document.getElementById("stuFields").style.display = "block";
+      document.getElementById("editSim").value = target.simulator_hours;
+      document.getElementById("editAbs").value = target.absences;
+      
+      // Load Instructors for the dropdown
+      const iRes = await fetch(`${API_URL}/instructors`);
+      const iData = await iRes.json();
+      const iSel = document.getElementById("editInstSelect");
+      iSel.innerHTML = "";
+      iData.forEach(i => {
+        const selected = (target.instructor_id && target.instructor_id._id === i._id) ? "selected" : "";
+        iSel.innerHTML += `<option value="${i._id}" ${selected}>${i.surname}</option>`;
+      });
+    }
+  });
+
+  // 3. UPDATE
+  document.getElementById("updateBtn").addEventListener("click", async () => {
+    const endpoint = currentType === "instructor" ? `/instructors/${currentId}` : `/students/${currentId}`;
+    let body = {};
+
+    if(currentType === "instructor") {
+      body.subject_code = document.getElementById("editSubject").value;
+    } else {
+      body.simulator_hours = document.getElementById("editSim").value;
+      body.absences = document.getElementById("editAbs").value;
+      body.instructor_id = document.getElementById("editInstSelect").value;
+    }
+
+    const res = await fetch(API_URL + endpoint, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if(res.ok) { alert("Updated successfully!"); location.reload(); }
+  });
+
+  // 4. DELETE
+  document.getElementById("deleteBtn").addEventListener("click", async () => {
+    if(!confirm("Are you sure you want to delete this record?")) return;
+    const endpoint = currentType === "instructor" ? `/instructors/${currentId}` : `/students/${currentId}`;
+    await fetch(API_URL + endpoint, { method: "DELETE" });
+    alert("Deleted.");
+    location.reload();
+  });
+</script>
+</body>
+</html>

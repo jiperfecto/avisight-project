@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 
 const InstructorSchema = new mongoose.Schema({
-  name: String,
+  given_name: String,
+  surname: String,
   subject_code: String,
 });
 

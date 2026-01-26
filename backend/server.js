@@ -18,7 +18,7 @@ mongoose.connect(MONGODB_URI)
 
 app.get("/", (req, res) => res.send("AviSight Backend is running"));
 
-/* ===== AUTH ROUTES ===== */
+/* ================= AUTH ROUTES ================= */
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
   if (username === "admin" && password === "admin123") {
@@ -27,46 +27,55 @@ app.post("/login", (req, res) => {
   res.status(401).json({ message: "Invalid credentials" });
 });
 
-app.post("/student-login", (req, res) => {
-  const { username, password } = req.body;
-  if (username === "avisight_student1" && password === "1234567809") {
-    return res.json({ message: "Student login successful" });
-  }
-  res.status(401).json({ message: "Invalid credentials" });
-});
+/* ================= INSTRUCTOR ROUTES ================= */
 
-/* ===== INSTRUCTOR ROUTES ===== */
-// 1. Add Instructor
-app.post("/instructors", async (req, res) => {
-  try {
-    const { name, subject_code } = req.body;
-    // Update if exists, Create if new
-    const newInstructor = await Instructor.findOneAndUpdate(
-      { name }, 
-      { name, subject_code },
-      { upsert: true, new: true }
-    );
-    res.json(newInstructor);
-  } catch (err) {
-    res.status(500).json({ message: "Error saving instructor" });
-  }
-});
-
-// 2. Get All Instructors (For Dropdowns)
+// GET ALL
 app.get("/instructors", async (req, res) => {
-  const instructors = await Instructor.find();
+  const instructors = await Instructor.find().sort({ surname: 1 });
   res.json(instructors);
 });
 
-// 3. Get Instructor Stats (Total No-Shows)
-app.get("/instructors/:name/stats", async (req, res) => {
+// ADD NEW (Check Duplicates)
+app.post("/instructors", async (req, res) => {
+  const { given_name, surname, subject_code } = req.body;
+  
+  // DUPLICATE CHECK
+  const exists = await Instructor.findOne({ 
+    given_name: new RegExp(`^${given_name}$`, "i"),
+    surname: new RegExp(`^${surname}$`, "i")
+  });
+  
+  if (exists) {
+    return res.status(409).json({ message: "Instructor already exists!" });
+  }
+
+  const newInst = await Instructor.create({ given_name, surname, subject_code });
+  res.json(newInst);
+});
+
+// UPDATE (Names Immutable)
+app.put("/instructors/:id", async (req, res) => {
+  const { subject_code } = req.body; // Only subject_code is allowed
+  await Instructor.findByIdAndUpdate(req.params.id, { subject_code });
+  res.json({ message: "Updated" });
+});
+
+// DELETE
+app.delete("/instructors/:id", async (req, res) => {
+  await Instructor.findByIdAndDelete(req.params.id);
+  // Optional: Clean up students assigned to this instructor?
+  res.json({ message: "Deleted" });
+});
+
+// GET STATS
+app.get("/instructors/:id/stats", async (req, res) => {
   try {
-    const students = await Student.find({ instructor_name: req.params.name });
-    // Sum all student absences
+    const inst = await Instructor.findById(req.params.id);
+    const students = await Student.find({ instructor_id: req.params.id });
     const total_no_shows = students.reduce((sum, stu) => sum + (stu.absences || 0), 0);
     
     res.json({ 
-      instructor: req.params.name, 
+      instructor: `${inst.surname}, ${inst.given_name}`, 
       total_no_shows, 
       student_count: students.length 
     });
@@ -75,35 +84,66 @@ app.get("/instructors/:name/stats", async (req, res) => {
   }
 });
 
-/* ===== STUDENT ROUTES ===== */
+
+/* ================= STUDENT ROUTES ================= */
+
+// GET ALL
 app.get("/students", async (req, res) => {
-  const students = await Student.find();
+  // Populate lets us see the instructor details instead of just ID
+  const students = await Student.find().populate("instructor_id");
   res.json(students);
 });
 
-app.get("/students/:name", async (req, res) => {
-  const student = await Student.findOne({
-    name: new RegExp(`^${req.params.name}$`, "i"),
+// ADD NEW (Check Duplicates)
+app.post("/students", async (req, res) => {
+  const { given_name, surname, simulator_hours, absences, instructor_id } = req.body;
+  
+  // DUPLICATE CHECK
+  const exists = await Student.findOne({ 
+    given_name: new RegExp(`^${given_name}$`, "i"),
+    surname: new RegExp(`^${surname}$`, "i")
   });
+
+  if (exists) {
+    return res.status(409).json({ message: "Student already exists!" });
+  }
+
+  const target_hours_left = simulator_hours - absences;
+
+  const newStudent = await Student.create({
+    given_name, surname, simulator_hours, absences, target_hours_left, instructor_id
+  });
+  res.json(newStudent);
+});
+
+// UPDATE (Names Immutable)
+app.put("/students/:id", async (req, res) => {
+  const { simulator_hours, absences, instructor_id } = req.body;
+  const target_hours_left = simulator_hours - absences;
+
+  await Student.findByIdAndUpdate(req.params.id, {
+    simulator_hours, absences, target_hours_left, instructor_id
+  });
+  res.json({ message: "Updated" });
+});
+
+// DELETE
+app.delete("/students/:id", async (req, res) => {
+  await Student.findByIdAndDelete(req.params.id);
+  res.json({ message: "Deleted" });
+});
+
+// SEARCH (For Student Portal)
+app.post("/students/search", async (req, res) => {
+  const { given_name, surname } = req.body;
+  const student = await Student.findOne({
+    given_name: new RegExp(`^${given_name}$`, "i"),
+    surname: new RegExp(`^${surname}$`, "i")
+  }).populate("instructor_id");
+
   if (!student) return res.status(404).json({ message: "Not found" });
   res.json(student);
 });
 
-app.post("/students", async (req, res) => {
-  const { name, simulator_hours, absences, instructor_name } = req.body;
-  const target_hours_left = simulator_hours - absences;
-
-  const updated = await Student.findOneAndUpdate(
-    { name },
-    { name, simulator_hours, absences, target_hours_left, instructor_name },
-    { upsert: true, new: true }
-  );
-  res.json(updated);
-});
-
-app.delete("/students/:name", async (req, res) => {
-  await Student.findOneAndDelete({ name: req.params.name });
-  res.json({ message: "Deleted" });
-});
 
 app.listen(PORT, () => console.log(`✅ AviSight running on port ${PORT}`));

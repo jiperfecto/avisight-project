@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>View Information - AviSight</title>
-  <link rel="stylesheet" href="style.css"> </head>
+  <link rel="stylesheet" href="style.css">
+</head>
 <body>
 <div class="header-logo">
   <img src="school_logo.jpeg">
@@ -24,7 +25,9 @@
   </div>
 
   <br><br>
-  <a href="admin.html"><button style="background-color:#555;">⬅ Back to Menu</button></a>
+  <a href="admin.html" style="text-decoration:none;">
+    <button class="primary-btn" style="background-color:#555;">⬅ Back to Menu</button>
+  </a>
 </div>
 
 <footer>AviSight</footer>
@@ -34,24 +37,26 @@
   const selector = document.getElementById("viewInstSelector");
   const resultDiv = document.getElementById("statsResult");
 
-  // Load Instructors immediately
+  // 1. Load Instructors with "Surname, Given Name" format
   async function init() {
     selector.innerHTML = "<option disabled selected>-- Select Instructor --</option>";
     try {
       const res = await fetch(`${API_URL}/instructors`);
       const data = await res.json();
+      
       data.forEach(inst => {
-        selector.innerHTML += `<option value="${inst.name}">${inst.name}</option>`;
+        // Use _id for the value to ensure uniqueness
+        selector.innerHTML += `<option value="${inst._id}">${inst.surname}, ${inst.given_name}</option>`;
       });
     } catch(e) {
       selector.innerHTML = "<option>Error loading list</option>";
     }
   }
 
-  // When instructor is selected, fetch stats
+  // 2. Fetch Stats when instructor is selected
   selector.addEventListener("change", async () => {
-    const name = selector.value;
-    const res = await fetch(`${API_URL}/instructors/${name}/stats`);
+    const id = selector.value; // Now uses the MongoDB ID
+    const res = await fetch(`${API_URL}/instructors/${id}/stats`);
     const data = await res.json();
 
     document.getElementById("resName").textContent = data.instructor;

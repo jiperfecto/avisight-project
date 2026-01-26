@@ -1,11 +1,12 @@
 import mongoose from "mongoose";
 
 const StudentSchema = new mongoose.Schema({
-  name: String,
+  given_name: String,
+  surname: String,
   simulator_hours: Number,
-  absences: Number, // "No Show Hours"
+  absences: Number,
   target_hours_left: Number,
-  instructor_name: String, // Linked Instructor
+  instructor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Instructor' } // Linking by ID is safer for name changes
 });
 
 export default mongoose.model("Student", StudentSchema);

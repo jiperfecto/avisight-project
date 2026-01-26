@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Add Information - AviSight</title>
-  <link rel="stylesheet" href="style.css"> </head>
+  <title>Add Info</title>
+  <link rel="stylesheet" href="style.css">
+</head>
 <body>
 <div class="header-logo">
   <img src="school_logo.jpeg">
@@ -11,7 +12,7 @@
 </div>
 
 <div class="container">
-  <label><b>Select Type to Add:</b></label>
+  <label><b>Select Type:</b></label>
   <select id="addTypeSelector" style="width:100%; padding:10px; margin-bottom:20px;">
     <option value="" disabled selected>-- Choose --</option>
     <option value="instructor">Instructor</option>
@@ -19,28 +20,26 @@
   </select>
 
   <div id="instructorForm" style="display:none; border-top:1px solid #333; padding-top:20px;">
-    <h3>Add New Instructor</h3>
-    <input id="instName" placeholder="Instructor Name">
+    <h3>Add Instructor</h3>
+    <input id="instGiven" placeholder="Given Name">
+    <input id="instSur" placeholder="Surname">
     <input id="instCode" placeholder="Subject Code">
     <button id="saveInstBtn">Save Instructor</button>
   </div>
 
   <div id="studentForm" style="display:none; border-top:1px solid #333; padding-top:20px;">
-    <h3>Add / Update Student</h3>
-    <input id="stuName" placeholder="Student Name">
+    <h3>Add Student</h3>
+    <input id="stuGiven" placeholder="Given Name">
+    <input id="stuSur" placeholder="Surname">
     <input id="stuSim" type="number" placeholder="Simulator Hours">
-    <input id="stuAbs" type="number" placeholder="Absences (No Show)">
-    
+    <input id="stuAbs" type="number" placeholder="Absences">
     <label>Assign Instructor:</label>
-    <select id="stuInstructorSelect" style="width:100%; padding:10px; margin-bottom:10px;">
-      <option>Loading instructors...</option>
-    </select>
-
+    <select id="stuInstructorSelect" style="width:100%; padding:10px; margin-bottom:10px;"></select>
     <button id="saveStuBtn">Save Student</button>
   </div>
-
+  
   <br>
-  <a href="admin.html"><button style="background-color:#555;">⬅ Back to Menu</button></a>
+  <a href="admin.html"><button style="background-color:#555;">⬅ Back</button></a>
 </div>
 
 <footer>AviSight</footer>
@@ -48,75 +47,62 @@
 <script>
   const API_URL = "https://avisight-backend.onrender.com";
   const selector = document.getElementById("addTypeSelector");
-  const instForm = document.getElementById("instructorForm");
-  const stuForm = document.getElementById("studentForm");
-  const stuInstSelect = document.getElementById("stuInstructorSelect");
 
-  // Toggle Forms
   selector.addEventListener("change", () => {
     if (selector.value === "instructor") {
-      instForm.style.display = "block";
-      stuForm.style.display = "none";
+      document.getElementById("instructorForm").style.display = "block";
+      document.getElementById("studentForm").style.display = "none";
     } else {
-      instForm.style.display = "none";
-      stuForm.style.display = "block";
-      loadInstructorsIntoDropdown();
+      document.getElementById("instructorForm").style.display = "none";
+      document.getElementById("studentForm").style.display = "block";
+      loadInstructors();
     }
   });
 
-  // Load Instructors for Student Form
-  async function loadInstructorsIntoDropdown() {
-    stuInstSelect.innerHTML = "<option disabled selected>-- Select Instructor --</option>";
-    try {
-      const res = await fetch(`${API_URL}/instructors`);
-      const data = await res.json();
-      data.forEach(inst => {
-        stuInstSelect.innerHTML += `<option value="${inst.name}">${inst.name}</option>`;
-      });
-    } catch (e) {
-      stuInstSelect.innerHTML = "<option>Error loading list</option>";
-    }
+  async function loadInstructors() {
+    const sel = document.getElementById("stuInstructorSelect");
+    sel.innerHTML = "<option disabled selected>-- Select --</option>";
+    const res = await fetch(`${API_URL}/instructors`);
+    const data = await res.json();
+    data.forEach(i => {
+      sel.innerHTML += `<option value="${i._id}">${i.surname}, ${i.given_name}</option>`;
+    });
   }
 
-  // Save Instructor Logic
+  // SAVE INSTRUCTOR
   document.getElementById("saveInstBtn").addEventListener("click", async () => {
-    const name = document.getElementById("instName").value.trim();
-    const code = document.getElementById("instCode").value.trim();
-    if(!name || !code) return alert("Fill all fields");
-
-    await fetch(`${API_URL}/instructors`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, subject_code: code })
-    });
-    alert("Instructor Saved!");
-    document.getElementById("instName").value = "";
-    document.getElementById("instCode").value = "";
-  });
-
-  // Save Student Logic
-  document.getElementById("saveStuBtn").addEventListener("click", async () => {
-    const name = document.getElementById("stuName").value.trim();
-    const sim = document.getElementById("stuSim").value;
-    const abs = document.getElementById("stuAbs").value;
-    const inst = stuInstSelect.value;
-
-    if(!name || !sim || !abs || inst.includes("--")) return alert("Fill all fields and select instructor");
-
-    await fetch(`${API_URL}/students`, {
+    const res = await fetch(`${API_URL}/instructors`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name, 
-        simulator_hours: sim, 
-        absences: abs,
-        instructor_name: inst
+        given_name: document.getElementById("instGiven").value.trim(),
+        surname: document.getElementById("instSur").value.trim(),
+        subject_code: document.getElementById("instCode").value.trim()
       })
     });
-    alert("Student Saved!");
-    document.getElementById("stuName").value = "";
-    document.getElementById("stuSim").value = "";
-    document.getElementById("stuAbs").value = "";
+    
+    if(res.status === 409) return alert("Instructor already exists!");
+    if(res.ok) alert("Instructor Saved!");
+    else alert("Error saving.");
+  });
+
+  // SAVE STUDENT
+  document.getElementById("saveStuBtn").addEventListener("click", async () => {
+    const res = await fetch(`${API_URL}/students`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        given_name: document.getElementById("stuGiven").value.trim(),
+        surname: document.getElementById("stuSur").value.trim(),
+        simulator_hours: document.getElementById("stuSim").value,
+        absences: document.getElementById("stuAbs").value,
+        instructor_id: document.getElementById("stuInstructorSelect").value
+      })
+    });
+
+    if(res.status === 409) return alert("Student already exists!");
+    if(res.ok) alert("Student Saved!");
+    else alert("Error saving.");
   });
 </script>
 </body>

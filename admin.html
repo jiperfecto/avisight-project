@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>AviSight Admin Hub</title>
-  <link rel="stylesheet" href="style.css"> </head>
+  <link rel="stylesheet" href="style.css">
+</head>
 <body>
 <div class="header-logo">
   <img src="school_logo.jpeg">
@@ -14,18 +15,21 @@
   <h3>Admin Login</h3>
   <input id="username" placeholder="Username">
   <input id="password" type="password" placeholder="Password">
-  <button id="loginBtn">Login</button>
-  <a href="index.html" class="link-btn">⬅ Back</a>
+  <button id="loginBtn" class="primary-btn">Login</button>
+  
+  <a href="index.html" style="text-decoration:none;">
+    <button class="primary-btn" style="background-color:#555; margin-top:5px;">⬅ Back</button>
+  </a>
+
   <p id="loginMsg"></p>
 </div>
 
 <div id="adminMenu" class="container" style="display:none; text-align:center;">
   <h3>Welcome, Admin</h3>
-  <p>Please select an action:</p>
-  
+  <p>Select an action:</p>
   <button onclick="location.href='add_info.html'">Add Information</button>
+  <button onclick="location.href='update_info.html'">Update Information</button>
   <button onclick="location.href='view_info.html'">View Information</button>
-  
   <br><br>
   <button onclick="logout()" style="background-color:#444;">Logout</button>
 </div>
@@ -34,8 +38,6 @@
 
 <script>
   const API_URL = "https://avisight-backend.onrender.com";
-
-  // Check Session
   if(sessionStorage.getItem("admin_auth")) {
     document.getElementById("loginSection").style.display = "none";
     document.getElementById("adminMenu").style.display = "block";
@@ -44,26 +46,20 @@
   document.getElementById("loginBtn").addEventListener("click", async () => {
     const u = document.getElementById("username").value.trim();
     const p = document.getElementById("password").value.trim();
-    
     const res = await fetch(`${API_URL}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: u, password: p })
     });
-
     if (res.ok) {
       sessionStorage.setItem("admin_auth", "true");
-      document.getElementById("loginSection").style.display = "none";
-      document.getElementById("adminMenu").style.display = "block";
+      location.reload();
     } else {
       document.getElementById("loginMsg").textContent = "Invalid Credentials";
     }
   });
 
-  function logout() {
-    sessionStorage.removeItem("admin_auth");
-    location.reload();
-  }
+  function logout() { sessionStorage.removeItem("admin_auth"); location.reload(); }
 </script>
 </body>
 </html>
