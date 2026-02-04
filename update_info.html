@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Update Info</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -60,38 +61,31 @@
   const API_URL = "https://avisight-backend.onrender.com";
   let currentId = null;
   let currentType = null;
+  let allData = [];
 
   const typeSel = document.getElementById("updateTypeSelector");
   const personSel = document.getElementById("personSelector");
 
-  // 1. SELECT TYPE
   typeSel.addEventListener("change", async () => {
     currentType = typeSel.value;
     document.getElementById("searchBox").style.display = "block";
     document.getElementById("editArea").style.display = "none";
     
-    // Load list
     const endpoint = currentType === "instructor" ? "/instructors" : "/students";
     const res = await fetch(API_URL + endpoint);
-    const data = await res.json();
+    allData = await res.json();
     
     personSel.innerHTML = "<option disabled selected>-- Select Name --</option>";
-    data.forEach(d => {
+    allData.forEach(d => {
       personSel.innerHTML += `<option value="${d._id}">${d.surname}, ${d.given_name}</option>`;
     });
   });
 
-  // 2. LOAD DETAILS
   document.getElementById("loadBtn").addEventListener("click", async () => {
-    const id = personSel.value;
-    if(!id || id.includes("--")) return;
-    currentId = id;
+    currentId = personSel.value;
+    if(!currentId || currentId.includes("--")) return;
     
-    // Let's just quick fetch list again and find.
-    const endpoint = currentType === "instructor" ? "/instructors" : "/students";
-    const res = await fetch(API_URL + endpoint);
-    const all = await res.json();
-    const target = all.find(x => x._id === currentId);
+    const target = allData.find(x => x._id === currentId);
 
     document.getElementById("editArea").style.display = "block";
     document.getElementById("editGiven").value = target.given_name;
@@ -107,7 +101,6 @@
       document.getElementById("editSim").value = target.simulator_hours;
       document.getElementById("editAbs").value = target.absences;
       
-      // Load Instructors for the dropdown
       const iRes = await fetch(`${API_URL}/instructors`);
       const iData = await iRes.json();
       const iSel = document.getElementById("editInstSelect");
@@ -119,7 +112,6 @@
     }
   });
 
-  // 3. UPDATE
   document.getElementById("updateBtn").addEventListener("click", async () => {
     const endpoint = currentType === "instructor" ? `/instructors/${currentId}` : `/students/${currentId}`;
     let body = {};
@@ -141,9 +133,8 @@
     if(res.ok) { alert("Updated successfully!"); location.reload(); }
   });
 
-  // 4. DELETE
   document.getElementById("deleteBtn").addEventListener("click", async () => {
-    if(!confirm("Are you sure you want to delete this record?")) return;
+    if(!confirm("Delete this record?")) return;
     const endpoint = currentType === "instructor" ? `/instructors/${currentId}` : `/students/${currentId}`;
     await fetch(API_URL + endpoint, { method: "DELETE" });
     alert("Deleted.");

@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>View Information - AviSight</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View Information</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -37,15 +38,12 @@
   const selector = document.getElementById("viewInstSelector");
   const resultDiv = document.getElementById("statsResult");
 
-  // 1. Load Instructors with "Surname, Given Name" format
   async function init() {
     selector.innerHTML = "<option disabled selected>-- Select Instructor --</option>";
     try {
       const res = await fetch(`${API_URL}/instructors`);
       const data = await res.json();
-      
       data.forEach(inst => {
-        // Use _id for the value to ensure uniqueness
         selector.innerHTML += `<option value="${inst._id}">${inst.surname}, ${inst.given_name}</option>`;
       });
     } catch(e) {
@@ -53,9 +51,8 @@
     }
   }
 
-  // 2. Fetch Stats when instructor is selected
   selector.addEventListener("change", async () => {
-    const id = selector.value; // Now uses the MongoDB ID
+    const id = selector.value;
     const res = await fetch(`${API_URL}/instructors/${id}/stats`);
     const data = await res.json();
 

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AviSight Student</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -25,19 +26,32 @@
   <input id="searchGiven" placeholder="Enter Given Name">
   <input id="searchSur" placeholder="Enter Surname">
   <button id="searchBtn">Search</button>
-  <div id="result" style="margin-top:15px; border-top:1px solid #ccc; padding-top:10px;"></div>
+
+  <div id="resultArea" style="display:none; margin-top:20px; border-top:1px solid #333; padding-top:15px;">
+    
+    <label><b>Select Instructor:</b></label>
+    <select id="instructorSelect" style="width:100%; padding:10px; margin-bottom:15px;">
+    </select>
+
+    <div id="statsDisplay" style="background: #fff8f0; padding:15px; border-radius:5px; border:1px solid #cea274;">
+      <p><b>Simulator Hours:</b> <span id="dispSim">--</span></p>
+      <p><b>Absences:</b> <span id="dispAbs">--</span></p>
+      <p><b>Target Hours Left:</b> <span id="dispTarget">--</span></p>
+    </div>
+
+  </div>
 </div>
 
 <footer>AviSight</footer>
 
 <script>
 const API_URL = "https://avisight-backend.onrender.com";
+let studentRecords = [];
 
-document.getElementById("studentLoginBtn").addEventListener("click", async () => {
+document.getElementById("studentLoginBtn").addEventListener("click", () => {
   const u = document.getElementById("studentUsername").value.trim();
   const p = document.getElementById("studentPassword").value.trim();
   
-  // Hardcoded student auth for now
   if(u === "avisight_student1" && p === "1234567809") {
      document.getElementById("studentLogin").style.display = "none";
      document.getElementById("studentSection").style.display = "block";
@@ -49,31 +63,57 @@ document.getElementById("studentLoginBtn").addEventListener("click", async () =>
 document.getElementById("searchBtn").addEventListener("click", async () => {
   const given = document.getElementById("searchGiven").value.trim();
   const sur = document.getElementById("searchSur").value.trim();
+  const resultArea = document.getElementById("resultArea");
+  const select = document.getElementById("instructorSelect");
 
   if(!given || !sur) return alert("Please enter both names.");
 
-  const res = await fetch(`${API_URL}/students/search`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ given_name: given, surname: sur })
-  });
+  try {
+    const res = await fetch(`${API_URL}/students/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ given_name: given, surname: sur })
+    });
 
-  const div = document.getElementById("result");
-  if (!res.ok) {
-    div.innerHTML = "<b style='color:red'>Student not found. Check spelling.</b>";
-  } else {
-    const s = await res.json();
-    const instName = s.instructor_id ? `${s.instructor_id.surname}` : "None";
+    if (!res.ok) {
+      resultArea.style.display = "none";
+      alert("Student not found.");
+      return;
+    }
+
+    studentRecords = await res.json();
     
-    div.innerHTML = `
-      <p><b>Name:</b> ${s.surname}, ${s.given_name}</p>
-      <p><b>Instructor:</b> ${instName}</p>
-      <p><b>Simulator Hours:</b> ${s.simulator_hours}</p>
-      <p><b>Absences:</b> ${s.absences}</p>
-      <p><b>Target Hours Left:</b> ${s.target_hours_left}</p>
-    `;
+    select.innerHTML = "<option disabled selected>-- Select Instructor --</option>";
+    studentRecords.forEach((rec, index) => {
+      const instName = rec.instructor_id ? `${rec.instructor_id.surname}, ${rec.instructor_id.given_name}` : "Unknown Instructor";
+      select.innerHTML += `<option value="${index}">${instName}</option>`;
+    });
+
+    resultArea.style.display = "block";
+    updateStats(-1);
+
+  } catch (err) {
+    alert("Error searching.");
   }
 });
+
+document.getElementById("instructorSelect").addEventListener("change", (e) => {
+  updateStats(e.target.value);
+});
+
+function updateStats(index) {
+  if (index == -1 || !studentRecords[index]) {
+    document.getElementById("dispSim").textContent = "--";
+    document.getElementById("dispAbs").textContent = "--";
+    document.getElementById("dispTarget").textContent = "--";
+    return;
+  }
+
+  const rec = studentRecords[index];
+  document.getElementById("dispSim").textContent = rec.simulator_hours;
+  document.getElementById("dispAbs").textContent = rec.absences;
+  document.getElementById("dispTarget").textContent = rec.target_hours_left;
+}
 </script>
 </body>
 </html>

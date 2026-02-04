@@ -28,34 +28,30 @@ app.post("/login", (req, res) => {
 });
 
 /* ================= INSTRUCTOR ROUTES ================= */
-
 // GET ALL
 app.get("/instructors", async (req, res) => {
   const instructors = await Instructor.find().sort({ surname: 1 });
   res.json(instructors);
 });
 
-// ADD NEW (Check Duplicates)
+// ADD NEW
 app.post("/instructors", async (req, res) => {
   const { given_name, surname, subject_code } = req.body;
   
-  // DUPLICATE CHECK
   const exists = await Instructor.findOne({ 
     given_name: new RegExp(`^${given_name}$`, "i"),
     surname: new RegExp(`^${surname}$`, "i")
   });
   
-  if (exists) {
-    return res.status(409).json({ message: "Instructor already exists!" });
-  }
+  if (exists) return res.status(409).json({ message: "Instructor already exists!" });
 
   const newInst = await Instructor.create({ given_name, surname, subject_code });
   res.json(newInst);
 });
 
-// UPDATE (Names Immutable)
+// UPDATE
 app.put("/instructors/:id", async (req, res) => {
-  const { subject_code } = req.body; // Only subject_code is allowed
+  const { subject_code } = req.body;
   await Instructor.findByIdAndUpdate(req.params.id, { subject_code });
   res.json({ message: "Updated" });
 });
@@ -63,11 +59,10 @@ app.put("/instructors/:id", async (req, res) => {
 // DELETE
 app.delete("/instructors/:id", async (req, res) => {
   await Instructor.findByIdAndDelete(req.params.id);
-  // Optional: Clean up students assigned to this instructor?
   res.json({ message: "Deleted" });
 });
 
-// GET STATS
+// STATS
 app.get("/instructors/:id/stats", async (req, res) => {
   try {
     const inst = await Instructor.findById(req.params.id);
@@ -84,39 +79,33 @@ app.get("/instructors/:id/stats", async (req, res) => {
   }
 });
 
-
 /* ================= STUDENT ROUTES ================= */
-
 // GET ALL
 app.get("/students", async (req, res) => {
-  // Populate lets us see the instructor details instead of just ID
   const students = await Student.find().populate("instructor_id");
   res.json(students);
 });
 
-// ADD NEW (Check Duplicates)
+// ADD NEW
 app.post("/students", async (req, res) => {
   const { given_name, surname, simulator_hours, absences, instructor_id } = req.body;
   
-  // DUPLICATE CHECK
   const exists = await Student.findOne({ 
     given_name: new RegExp(`^${given_name}$`, "i"),
-    surname: new RegExp(`^${surname}$`, "i")
+    surname: new RegExp(`^${surname}$`, "i"),
+    instructor_id: instructor_id
   });
 
-  if (exists) {
-    return res.status(409).json({ message: "Student already exists!" });
-  }
+  if (exists) return res.status(409).json({ message: "Student record already exists for this instructor!" });
 
   const target_hours_left = simulator_hours - absences;
-
   const newStudent = await Student.create({
     given_name, surname, simulator_hours, absences, target_hours_left, instructor_id
   });
   res.json(newStudent);
 });
 
-// UPDATE (Names Immutable)
+// UPDATE
 app.put("/students/:id", async (req, res) => {
   const { simulator_hours, absences, instructor_id } = req.body;
   const target_hours_left = simulator_hours - absences;
@@ -133,17 +122,18 @@ app.delete("/students/:id", async (req, res) => {
   res.json({ message: "Deleted" });
 });
 
-// SEARCH (For Student Portal)
+// SEARCH (For Student Portal - Returns Array)
 app.post("/students/search", async (req, res) => {
   const { given_name, surname } = req.body;
-  const student = await Student.findOne({
+  
+  const students = await Student.find({
     given_name: new RegExp(`^${given_name}$`, "i"),
     surname: new RegExp(`^${surname}$`, "i")
   }).populate("instructor_id");
 
-  if (!student) return res.status(404).json({ message: "Not found" });
-  res.json(student);
+  if (students.length === 0) return res.status(404).json({ message: "Not found" });
+  
+  res.json(students);
 });
-
 
 app.listen(PORT, () => console.log(`✅ AviSight running on port ${PORT}`));

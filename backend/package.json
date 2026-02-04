@@ -1,5 +1,5 @@
 {
-  "name": "flight-sim-student-tracker-backend",
+  "name": "avisight-backend",
   "version": "1.0.0",
   "main": "server.js",
   "type": "module",

@@ -5,23 +5,20 @@
   --light: #fefffe;
 }
 
-/* Global Reset - Makes sizing predictable */
-* {
-  box-sizing: border-box; 
-}
+* { box-sizing: border-box; }
 
 body {
   font-family: Arial, sans-serif;
   background: var(--light);
   margin: 0;
-  padding: 10px; /* Reduced padding for mobile */
+  padding: 10px;
   color: var(--dark);
 }
 
 h1 { 
   text-align: center; 
   color: var(--dark);
-  font-size: 1.5rem; /* Slightly smaller for mobile safety */
+  font-size: 1.5rem;
   margin: 10px 0;
 }
 
@@ -30,35 +27,28 @@ h1 {
   justify-content: center; 
   align-items: center; 
   gap: 12px; 
-  flex-wrap: wrap; /* Allows logo to stack on very small screens */
+  flex-wrap: wrap; 
 }
-
-.header-logo img { 
-  height: 50px; /* Slightly smaller */
-}
+.header-logo img { height: 50px; }
 
 .container {
   background: var(--gold1);
   border-radius: 10px;
   padding: 20px;
-  
-  /* RESPONSIVE WIDTH LOGIC */
-  width: 95%;        /* Takes up most of the screen on mobile */
-  max-width: 650px;  /* Stops growing on desktop */
-  
+  width: 95%;
+  max-width: 650px;
   margin: 20px auto;
   box-shadow: 0 0 10px rgba(0,0,0,0.15);
   color: var(--dark);
 }
 
-/* Make inputs and buttons easier to tap on mobile */
-input, button {
+input, select, button {
   padding: 12px;
-  margin: 8px 0; /* Vertical spacing */
+  margin: 8px 0;
   border-radius: 6px;
   border: 1px solid var(--dark);
-  width: 100%; /* Forces them to fill the container width */
-  font-size: 16px; /* Prevents iPhone from zooming in on inputs */
+  width: 100%;
+  font-size: 16px;
 }
 
 button {
@@ -68,26 +58,11 @@ button {
   border: none;
   font-weight: bold;
 }
-
 button:hover { opacity: .8; }
 
-/* Table Handling */
-.table-wrapper {
-  overflow-x: auto; /* Allows table to scroll sideways if it gets too wide */
-  margin-top: 10px;
-}
-
-table { 
-  width: 100%; 
-  border-collapse: collapse; 
-  min-width: 400px; /* Ensures table doesn't get crushed */
-}
-
-th, td { 
-  padding: 8px; 
-  border-bottom: 1px solid var(--dark); 
-  text-align: center; 
-  font-size: 14px; 
+.primary-btn { /* Utility class for consistency */
+  background-color: var(--dark);
+  color: var(--light);
 }
 
 footer {
@@ -96,15 +71,4 @@ footer {
   padding: 15px;
   color: var(--light);
   background: var(--dark);
-  font-size: 0.9rem;
-}
-
-/* MOBILE SPECIFIC OVERRIDES */
-@media (max-width: 480px) {
-  .header-logo {
-    flex-direction: column; /* Stacks Logo on top of Text */
-  }
-  .container {
-    padding: 15px;
-  }
 }
